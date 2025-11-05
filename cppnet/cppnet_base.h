@@ -57,6 +57,10 @@ public:
     void OnConnect(std::shared_ptr<RWSocket> sock, uint16_t err);
     void OnDisConnect(std::shared_ptr<RWSocket> sock, uint16_t err);
 
+    // Load balancing methods
+    uint32_t GetLeastLoadedDispatcherIndex();
+    std::shared_ptr<Dispatcher> GetDispatcherByIndex(uint32_t index) { return _dispatchers[index]; }
+
 private:
     timer_call_back    _timer_cb;
     read_call_back     _read_cb;

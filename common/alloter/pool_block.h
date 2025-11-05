@@ -36,6 +36,13 @@ public:
     // release half memory
     virtual void ReleaseHalf();
     virtual void Expansion(uint32_t num = 0);
+    
+    // Dynamic resizing methods
+    virtual void ResizeBlockSize(uint32_t new_size);
+    virtual void ResizeAddNumber(uint32_t new_num);
+    
+    // Get current configuration
+    virtual uint32_t GetAddNumber() const { return _number_large_add_nodes; }
 
 private:
 #ifdef __use_iocp__
@@ -48,6 +55,6 @@ private:
 
 std::shared_ptr<BlockMemoryPool> MakeBlockMemoryPoolPtr(uint32_t large_sz, uint32_t add_num);
 
-}
+};
 
 #endif

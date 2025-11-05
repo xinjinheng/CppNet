@@ -14,6 +14,7 @@
 
 #include "include/cppnet_type.h"
 #include "common/thread/thread_with_queue.h"
+#include "common/network/load_metrics.h"
 
 namespace cppnet {
 
@@ -26,7 +27,7 @@ class CppNetBase;
 class EventActions;
 
 class Dispatcher: 
-    public Thread,
+    public Thread, 
     public std::enable_shared_from_this<Dispatcher> {
 
 public:
@@ -49,10 +50,31 @@ public:
     void StopTimer(uint32_t timer_id);
 
     std::thread::id GetThreadID() { return _local_thread_id; }
+    std::shared_ptr<EventActions> GetEventActions() { return _event_actions; }
+
+    // Load monitoring methods
+    void AddConnection(std::shared_ptr<RWSocket> sock);
+    void RemoveConnection(std::shared_ptr<RWSocket> sock);
+    uint32_t GetConnectionCount() const { return _connection_count; }
+    double GetLoadScore() const;
+    
+    // Load metrics
+    void UpdateCPULoad(double load);
+    void UpdateIOWaitTime(uint64_t time);
+    void UpdateMemoryPoolUsage(double usage);
+    void UpdateTaskQueueLength(uint32_t length);
+    void UpdatePacketRate(uint32_t rate);
+    void UpdateBandwidthUsage(double usage);
+    void UpdateContextSwitchRate(uint32_t rate);
+    void UpdateCacheHitRate(double rate);
+    void UpdateErrorRate(double rate);
+    void UpdateThreadUtilization(double utilization);
+    void UpdateResponseTime(uint64_t time);
 
 private:
     void DoTask();
     uint32_t MakeTimerID();
+    void UpdateLoadScore();
 
     uint64_t _cur_utc_time;
 
@@ -67,6 +89,14 @@ private:
     std::shared_ptr<EventActions> _event_actions;
 
     std::weak_ptr<CppNetBase> _cppnet_base;
+
+    // Load metrics
+    LoadMetrics _load_metrics;
+    std::atomic<double> _load_score{0.0};
+    
+    // Connection map
+    std::unordered_map<uint64_t, std::shared_ptr<RWSocket>> _connection_map;
+    std::mutex _connection_map_mutex;
 
     static thread_local std::unordered_map<uint64_t, std::shared_ptr<TimerEvent>> __all_timer_event_map;
 };

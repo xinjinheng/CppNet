@@ -120,17 +120,28 @@ void ConnectSocket::OnAccept() {
 
         sock->SetListenPort(_addr.GetAddrPort());
         sock->SetCppNetBase(cppnet_base);
-        sock->SetEventActions(_event_actions);
         sock->SetAddress(std::move(address));
-        sock->SetDispatcher(GetDispatcher());
+
+        // Get the least loaded dispatcher
+        uint32_t dispatcher_index = cppnet_base->GetLeastLoadedDispatcherIndex();
+        auto target_dispatcher = cppnet_base->GetDispatcherByIndex(dispatcher_index);
+        
+        // Set the socket's dispatcher and event actions
+        sock->SetDispatcher(target_dispatcher);
+        sock->SetEventActions(target_dispatcher->GetEventActions());
 
         __all_socket_map[ret._return_value] = sock;
+    
+        // Add the connection to the target dispatcher
+        target_dispatcher->AddConnection(sock);
     
         //call accept call back function
         cppnet_base->OnAccept(sock);
 
-        //start read
-        sock->Read();
+        //start read in the target dispatcher's thread
+        target_dispatcher->PostTask([sock]() {
+            sock->Read();
+        });
     }
 }
 

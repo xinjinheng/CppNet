@@ -102,6 +102,26 @@ void BlockMemoryPool::Expansion(uint32_t num) {
     }
 }
 
+void BlockMemoryPool::ResizeBlockSize(uint32_t new_size) {
+#ifdef __use_iocp__
+    std::lock_guard<std::mutex> lock(_mutex);
+#endif
+    // Free all existing free blocks
+    for (auto& mem : _free_mem_vec) {
+        free(mem);
+    }
+    _free_mem_vec.clear();
+    // Set the new block size
+    _large_size = new_size;
+}
+
+void BlockMemoryPool::ResizeAddNumber(uint32_t new_num) {
+#ifdef __use_iocp__
+    std::lock_guard<std::mutex> lock(_mutex);
+#endif
+    _number_large_add_nodes = new_num;
+}
+
 std::shared_ptr<BlockMemoryPool> MakeBlockMemoryPoolPtr(uint32_t large_sz, uint32_t add_num) {
     return std::make_shared<BlockMemoryPool>(large_sz, add_num);
 }

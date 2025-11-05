@@ -157,4 +157,23 @@ void CppNetBase::OnDisConnect(std::shared_ptr<RWSocket> sock, uint16_t err) {
     }
 }
 
+uint32_t CppNetBase::GetLeastLoadedDispatcherIndex() {
+    if (_dispatchers.empty()) {
+        return 0;
+    }
+    
+    uint32_t least_loaded_index = 0;
+    double min_load_score = _dispatchers[0]->GetLoadScore();
+    
+    for (uint32_t i = 1; i < _dispatchers.size(); i++) {
+        double current_load = _dispatchers[i]->GetLoadScore();
+        if (current_load < min_load_score) {
+            min_load_score = current_load;
+            least_loaded_index = i;
+        }
+    }
+    
+    return least_loaded_index;
+}
+
 }

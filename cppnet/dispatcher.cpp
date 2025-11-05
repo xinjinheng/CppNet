@@ -34,6 +34,100 @@ Dispatcher::Dispatcher(std::shared_ptr<CppNetBase> base, uint32_t thread_num, ui
     Start();
 }
 
+void Dispatcher::AddConnection(std::shared_ptr<RWSocket> sock) {
+    if (!sock) return;
+    
+    { 
+        std::unique_lock<std::mutex> lock(_connection_map_mutex);
+        _connection_map[sock->GetSocket()] = sock;
+    }
+    
+    // Update connection count in load metrics
+    _load_metrics.UpdateConnectionCount(static_cast<uint32_t>(_connection_map.size()));
+    UpdateLoadScore();
+}
+
+void Dispatcher::RemoveConnection(std::shared_ptr<RWSocket> sock) {
+    if (!sock) return;
+    
+    { 
+        std::unique_lock<std::mutex> lock(_connection_map_mutex);
+        _connection_map.erase(sock->GetSocket());
+    }
+    
+    // Update connection count in load metrics
+    _load_metrics.UpdateConnectionCount(static_cast<uint32_t>(_connection_map.size()));
+    UpdateLoadScore();
+}
+
+double Dispatcher::GetLoadScore() const {
+    return _load_score;
+}
+
+void Dispatcher::UpdateCPULoad(double load) {
+    _load_metrics.UpdateCPULoad(load);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateIOWaitTime(uint64_t time) {
+    _load_metrics.UpdateIOWaitTime(time);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateMemoryPoolUsage(double usage) {
+    _load_metrics.UpdateMemoryPoolUsage(usage);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateTaskQueueLength(uint32_t length) {
+    _load_metrics.UpdateTaskQueueLength(length);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdatePacketRate(uint32_t rate) {
+    _load_metrics.UpdatePacketRate(rate);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateBandwidthUsage(double usage) {
+    _load_metrics.UpdateBandwidthUsage(usage);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateContextSwitchRate(uint32_t rate) {
+    _load_metrics.UpdateContextSwitchRate(rate);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateCacheHitRate(double rate) {
+    _load_metrics.UpdateCacheHitRate(rate);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateErrorRate(double rate) {
+    _load_metrics.UpdateErrorRate(rate);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateThreadUtilization(double utilization) {
+    _load_metrics.UpdateThreadUtilization(utilization);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateResponseTime(uint64_t time) {
+    _load_metrics.UpdateResponseTime(time);
+    UpdateLoadScore();
+}
+
+void Dispatcher::UpdateLoadScore() {
+    double new_score = _load_metrics.CalculateLoadScore();
+    
+    // Smooth the score using exponential moving average
+    double alpha = 0.7;
+    double old_score = _load_score;
+    _load_score = alpha * new_score + (1 - alpha) * old_score;
+}
+
 Dispatcher::Dispatcher(std::shared_ptr<CppNetBase> base, uint32_t base_id):
     _cur_utc_time(0),
     _timer_id_creater(0),

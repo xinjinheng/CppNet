@@ -7,11 +7,11 @@
 #include <signal.h>
 #endif
 
-#include "cppnet/dispatcher.h"
-#include "cppnet/cppnet_base.h"
-#include "include/cppnet_type.h"
-#include "cppnet/cppnet_config.h"
-#include "cppnet/socket/rw_socket.h"
+#include "dispatcher.h"
+#include "cppnet_base.h"
+#include "cppnet_type.h"
+#include "cppnet_config.h"
+#include "socket/rw_socket.h"
 
 #include "common/log/log.h"
 #include "common/os/os_info.h"
@@ -46,9 +46,18 @@ void CppNetBase::Init(uint32_t thread_num) {
     sigprocmask(SIG_SETMASK, &set, NULL);
 #endif
 
+    // 初始化负载监控器
+    _load_monitor = std::make_shared<LoadMonitor>();
+
+    // 初始化连接迁移器
+    _connection_migrator = std::make_shared<ConnectionMigrator>(shared_from_this());
+
     for (uint32_t i = 0; i < thread_num; i++) {
         auto dispatcher = std::make_shared<Dispatcher>(shared_from_this());
         _dispatchers.push_back(dispatcher);
+
+        // 将dispatcher添加到负载监控器
+        _load_monitor->AddDispatcher(dispatcher);
     }
 }
 

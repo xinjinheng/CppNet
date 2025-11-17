@@ -10,7 +10,9 @@
 #include <string>
 #include <vector>
 
-#include "include/cppnet_type.h"
+#include "cppnet_type.h"
+#include "load_monitor.h"
+#include "connection_migrator.h"
 
 namespace cppnet {
 
@@ -57,6 +59,10 @@ public:
     void OnConnect(std::shared_ptr<RWSocket> sock, uint16_t err);
     void OnDisConnect(std::shared_ptr<RWSocket> sock, uint16_t err);
 
+    // 获取监控和迁移实例
+    std::shared_ptr<LoadMonitor> GetLoadMonitor() { return _load_monitor; }
+    std::shared_ptr<ConnectionMigrator> GetConnectionMigrator() { return _connection_migrator; }
+
 private:
     timer_call_back    _timer_cb;
     read_call_back     _read_cb;
@@ -67,6 +73,9 @@ private:
 
     std::unique_ptr<RangeRandom> _random;
     std::vector<std::shared_ptr<Dispatcher>> _dispatchers;
+    
+    std::shared_ptr<LoadMonitor> _load_monitor;
+    std::shared_ptr<ConnectionMigrator> _connection_migrator;
 };
 
 } // namespace cppnet

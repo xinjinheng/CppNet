@@ -5,12 +5,12 @@
 
 #include <map>
 
-#include "cppnet/dispatcher.h"
-#include "cppnet/cppnet_base.h"
-#include "cppnet/socket/rw_socket.h"
-#include "cppnet/event/timer_event.h"
-#include "cppnet/socket/connect_socket.h"
-#include "cppnet/event/action_interface.h"
+#include "dispatcher.h"
+#include "cppnet_base.h"
+#include "socket/rw_socket.h"
+#include "event/timer_event.h"
+#include "socket/connect_socket.h"
+#include "event/action_interface.h"
 
 #include "common/util/time.h"
 #include "common/timer/timer.h"
@@ -23,6 +23,7 @@ thread_local std::unordered_map<uint64_t, std::shared_ptr<TimerEvent>> Dispatche
 Dispatcher::Dispatcher(std::shared_ptr<CppNetBase> base, uint32_t thread_num, uint32_t base_id):
     _cur_utc_time(0),
     _timer_id_creater(0),
+    _connection_count(0),
     _cppnet_base(base) {
 
     _timer = MakeTimer1Min();
@@ -37,6 +38,7 @@ Dispatcher::Dispatcher(std::shared_ptr<CppNetBase> base, uint32_t thread_num, ui
 Dispatcher::Dispatcher(std::shared_ptr<CppNetBase> base, uint32_t base_id):
     _cur_utc_time(0),
     _timer_id_creater(0),
+    _connection_count(0),
     _cppnet_base(base) {
 
     _timer = MakeTimer1Min();
@@ -211,6 +213,49 @@ void Dispatcher::DoTask() {
 uint32_t Dispatcher::MakeTimerID() {
     std::unique_lock<std::mutex> lock(_timer_id_mutex);
     return ++_timer_id_creater;
+}
+
+void Dispatcher::AddConnection(uint64_t sockfd, std::shared_ptr<RWSocket> sock) {
+    std::unique_lock<std::mutex> lock(_connection_mutex);
+    _connection_map[sockfd] = sock;
+    _connection_count++;
+
+    // 更新负载监控
+    auto base = _cppnet_base.lock();
+    if (base) {
+        auto load_monitor = base->GetLoadMonitor();
+        if (load_monitor) {
+            load_monitor->UpdateDispatcherLoad(shared_from_this(), _connection_count);
+        }
+    }
+}
+
+void Dispatcher::RemoveConnection(uint64_t sockfd) {
+    std::unique_lock<std::mutex> lock(_connection_mutex);
+    auto iter = _connection_map.find(sockfd);
+    if (iter != _connection_map.end()) {
+        _connection_map.erase(iter);
+        _connection_count--;
+
+        // 更新负载监控
+        auto base = _cppnet_base.lock();
+        if (base) {
+            auto load_monitor = base->GetLoadMonitor();
+            if (load_monitor) {
+                load_monitor->UpdateDispatcherLoad(shared_from_this(), _connection_count);
+            }
+        }
+    }
+}
+
+uint32_t Dispatcher::GetConnectionCount() {
+    std::unique_lock<std::mutex> lock(_connection_mutex);
+    return _connection_count;
+}
+
+std::unordered_map<uint64_t, std::shared_ptr<RWSocket>> Dispatcher::GetAllConnections() {
+    std::unique_lock<std::mutex> lock(_connection_mutex);
+    return _connection_map;
 }
 
 }

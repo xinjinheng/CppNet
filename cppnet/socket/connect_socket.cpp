@@ -17,6 +17,7 @@
 #include "cppnet/cppnet_base.h"
 #include "cppnet/cppnet_config.h"
 #include "cppnet/socket/rw_socket.h"
+#include "cppnet/dispatcher.h"
 #include "cppnet/event/action_interface.h"
 #include "cppnet/event/event_interface.h"
 
@@ -128,6 +129,9 @@ void ConnectSocket::OnAccept() {
     
         //call accept call back function
         cppnet_base->OnAccept(sock);
+
+        // 把连接添加到dispatcher
+        GetDispatcher()->AddConnection(ret._return_value, sock);
 
         //start read
         sock->Read();

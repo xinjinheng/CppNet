@@ -6,8 +6,8 @@
 #ifndef COMMON_THREAD_THREAD_WITH_QUEUE
 #define COMMON_THREAD_THREAD_WITH_QUEUE
 
-#include "common/thread/thread.h"
-#include "common/structure/thread_safe_block_queue.h"
+#include "thread.h"
+#include "structure/thread_safe_block_queue.h"
 
 namespace cppnet {
     

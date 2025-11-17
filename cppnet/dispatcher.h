@@ -12,8 +12,8 @@
 #include <functional>
 #include <unordered_map>
 
-#include "include/cppnet_type.h"
-#include "common/thread/thread_with_queue.h"
+#include "cppnet_type.h"
+#include "thread/thread_with_queue.h"
 
 namespace cppnet {
 
@@ -50,6 +50,15 @@ public:
 
     std::thread::id GetThreadID() { return _local_thread_id; }
 
+    // 连接管理
+    void AddConnection(uint64_t sockfd, std::shared_ptr<RWSocket> sock);
+    void RemoveConnection(uint64_t sockfd);
+    uint32_t GetConnectionCount();
+    std::unordered_map<uint64_t, std::shared_ptr<RWSocket>> GetAllConnections();
+
+    // 获取事件操作接口
+    std::shared_ptr<EventActions> GetEventActions() { return _event_actions; }
+
 private:
     void DoTask();
     uint32_t MakeTimerID();
@@ -67,6 +76,11 @@ private:
     std::shared_ptr<EventActions> _event_actions;
 
     std::weak_ptr<CppNetBase> _cppnet_base;
+
+    // 连接管理
+    std::mutex _connection_mutex;
+    std::unordered_map<uint64_t, std::shared_ptr<RWSocket>> _connection_map;
+    uint32_t _connection_count;
 
     static thread_local std::unordered_map<uint64_t, std::shared_ptr<TimerEvent>> __all_timer_event_map;
 };

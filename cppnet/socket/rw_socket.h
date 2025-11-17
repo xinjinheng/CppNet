@@ -7,8 +7,9 @@
 #define CPPNET_SOCKET_READ_WRITE_SOCKET
 
 #include <atomic>
-#include "include/cppnet_socket.h"
-#include "cppnet/socket/socket_interface.h"
+#include "cppnet_socket.h"
+#include "socket_interface.h"
+#include "../ssl/ssl_context.h"
 
 
 namespace cppnet {
@@ -76,6 +77,10 @@ protected:
 
     std::shared_ptr<AlloterWrap>     _alloter;
     std::shared_ptr<BlockMemoryPool> _block_pool;
+    
+    // SSL support
+    bool _ssl_enabled;
+    std::shared_ptr<SSLSession> _ssl_session;
 
     static thread_local std::unordered_map<uint64_t, std::shared_ptr<Socket>> __connecting_socket_map;
 };

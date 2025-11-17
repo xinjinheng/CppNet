@@ -5,18 +5,18 @@
 
 #include <errno.h>
 
-#include "cppnet/dispatcher.h"
-#include "cppnet/cppnet_base.h"
-#include "cppnet/cppnet_config.h"
-#include "cppnet/socket/rw_socket.h"
-#include "cppnet/event/event_interface.h"
-#include "cppnet/event/action_interface.h"
+#include "../dispatcher.h"
+#include "../cppnet_base.h"
+#include "../cppnet_config.h"
+#include "rw_socket.h"
+#include "../event/event_interface.h"
+#include "../event/action_interface.h"
 
-#include "common/log/log.h"
-#include "common/network/socket.h"
-#include "common/alloter/pool_block.h"
-#include "common/buffer/buffer_queue.h"
-#include "common/alloter/pool_alloter.h"
+#include "log/log.h"
+#include "network/socket.h"
+#include "alloter/pool_block.h"
+#include "buffer/buffer_queue.h"
+#include "alloter/pool_alloter.h"
 
 namespace cppnet {
 
@@ -39,7 +39,8 @@ RWSocket::RWSocket(uint64_t sock, std::shared_ptr<AlloterWrap> alloter):
     _shutdown(false),
     _connecting(false),
     _event(nullptr),
-    _alloter(alloter) {
+    _alloter(alloter),
+    _ssl_enabled(false) {
 
     _block_pool = _alloter->PoolNewSharePtr<BlockMemoryPool>(__mem_block_size, __mem_block_add_step);
 
@@ -228,6 +229,11 @@ void RWSocket::OnConnect(uint16_t err) {
 void RWSocket::OnDisConnect(uint16_t err) {
     auto sock = shared_from_this();
     __all_socket_map.erase(_sock);
+
+    // 从dispatcher移除连接
+    if (GetDispatcher()) {
+        GetDispatcher()->RemoveConnection(_sock);
+    }
 
     if (!IsShutdown()) {
         auto cppnet_base = _cppnet_base.lock();

@@ -7,7 +7,7 @@
 #define CPPNET_SOCKET_CONNECT_SOCKET
 
 #include <memory>
-#include "cppnet/socket/socket_interface.h"
+#include "socket_interface.h"
 
 namespace cppnet {
 
